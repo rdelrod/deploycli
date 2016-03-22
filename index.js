@@ -125,11 +125,9 @@ async.waterfall([
     let status = require('child_process').spawnSync('git', ['status', '-z']);
     let output = status.output.toString('ascii');
 
-    if(!output) {
+    if(output === ',,') {
       log('master is clean');
       return next(false, config);
-    } else {
-      console.log('"'+output+'"')
     }
 
     commitChanges(config, branch, next);
@@ -191,7 +189,7 @@ async.waterfall([
      let status = require('child_process').spawnSync('git', ['status', '-z']);
      let output = status.output.toString('ascii');
 
-     if(!output) {
+     if(output === ',,') {
        log('production is clean');
        return next(false, config);
      }
