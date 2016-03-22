@@ -240,28 +240,28 @@ async.waterfall([
       let socket = io(config.deploy);
       socket.on('connected', function() {
         log('connected to deployment');
-
-        log('running git push origin', config.branch)
-        let push = spawn('git', ['push', 'origin', config.branch]);
-        push.stdout.on('data', (data) => {
-          data = data.toString('ascii');
-          console.log(data);
-        });
-        push.stderr.on('data', (data) => {
-          data = data.toString('ascii');
-          console.error(data);
-        });
-        push.on('exit', (code) => {
-          if(code !== 0) {
-            return next('Failed to push to origin');
-          }
-
-          return next(false, config);
-        })
       });
       socket.on('disconnect', function() {
         log('disconnected from deployment server')
       });
+
+      log('running git push origin', config.branch)
+      let push = spawn('git', ['push', 'origin', config.branch]);
+      push.stdout.on('data', (data) => {
+        data = data.toString('ascii');
+        console.log(data);
+      });
+      push.stderr.on('data', (data) => {
+        data = data.toString('ascii');
+        console.error(data);
+      });
+      push.on('exit', (code) => {
+        if(code !== 0) {
+          return next('Failed to push to origin');
+        }
+
+        return next(false, config);
+      })
     },
 
     /**
