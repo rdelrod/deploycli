@@ -128,6 +128,8 @@ async.waterfall([
     if(!output) {
       log('master is clean');
       return next(false, config);
+    } else {
+      console.log('"'+output+'"')
     }
 
     commitChanges(config, branch, next);
