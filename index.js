@@ -30,6 +30,58 @@ if(fs.existsSync(LOCAL)) {
   process.exit(1);
 }
 
+const commitChanges = function(config, branch, next) {
+  async.waterfall([
+    function(n) {
+      let add = spawn('git', ['add', '-A', '.']);
+      add.on('exit', (code) => {
+        if(code !== 0) {
+          return n('Failed to add . to staging.');
+        }
+
+        return n();
+      });
+    },
+
+    function(n) {
+      log('commit changes on', branch);
+      prompt.start();
+
+      prompt.get(['commit'], function(err, result) {
+        if(err) {
+          return n(err);
+        }
+
+        return n(false, result.commit);
+      });
+    },
+
+    function(message, n) {
+      let commit = spawn('git', ['commit', '-am', message]);
+      commit.on('exit', (code) => {
+        if(code !== 0) {
+          return n('Failed to commit changes.');
+        }
+
+        return n();
+      })
+    }
+  ], function(err) {
+    if(err) {
+      return next(err);
+    }
+
+    let checkout = spawn('git', ['checkout', config.branch]);
+    checkout.on('exit', (code) => {
+      if(code !== 0) {
+        return next('Failed to checkout after commiting master :(');
+      }
+
+      return next(false, config);
+    });
+  })
+}
+
 async.waterfall([
   /**
    * Process our config.
@@ -64,6 +116,21 @@ async.waterfall([
     git.stderr.on('data', (data) => {
       return next(data.toString('ascii'));
     })
+  },
+
+  /**
+   * Check the status of master
+   **/
+  function(config, branch, next) {
+    let status = require('child_process').spawnSync('git', ['status', '-z']);
+    let output = status.output.toString('ascii');
+
+    if(!output) {
+      log('master is clean');
+      return next(false, config);
+    }
+
+    commitChanges(config, branch, next);
   },
 
   /**
@@ -103,54 +170,7 @@ async.waterfall([
        }
 
        if(data.match(/Your local changes/g)) {
-         async.waterfall([
-           function(n) {
-             let add = spawn('git', ['add', '-A', '.']);
-             add.on('exit', (code) => {
-               if(code !== 0) {
-                 return n('Failed to add . to staging.');
-               }
-
-               return n();
-             });
-           },
-
-           function(n) {
-             prompt.start();
-
-             prompt.get(['commit'], function(err, result) {
-               if(err) {
-                 return n(err);
-               }
-
-               return n(false, result.commit);
-             });
-           },
-
-           function(message, n) {
-             let commit = spawn('git', ['commit', '-am', message]);
-             commit.on('exit', (code) => {
-               if(code !== 0) {
-                 return n('Failed to commit changes.');
-               }
-
-               return n();
-             })
-           }
-         ], function(err) {
-           if(err) {
-             return next(err);
-           }
-
-           let checkout = spawn('git', ['checkout', config.branch]);
-           checkout.on('exit', (code) => {
-             if(code !== 0) {
-               return next('Failed to checkout after commiting master :(');
-             }
-
-             return next(false, config);
-           });
-         })
+         commitChanges(config, config.branch, next);
        }
      })
      git.on('exit', (code) => {
@@ -205,14 +225,14 @@ async.waterfall([
       checkout.on('exit', (code) => {
         if(code !== 0) return next('Failed to checkout back to master');
 
-        return next();
+        return next(false, config);
       });
     }
-], function(err) {
+], function(err, config) {
   if(err) {
     log('error', err);
     process.exit(1);
   }
 
-  log('success', '{name}', 'has been deployed.');
+  log('success', config.name, 'has been deployed.');
 })
