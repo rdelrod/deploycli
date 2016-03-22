@@ -171,6 +171,24 @@ async.waterfall([
          return next(false, config);
        }
      });
+   },
+
+   /**
+    * Merge master in config.branch
+    **/
+   function(config, next) {
+     let merge = spawn('git', ['merge', 'master']);
+     merge.stdout.on('data', (data) => {
+       data = data.toString('ascii');
+     });
+     merge.stderr.on('data', (data) => {
+       data = data.toString('ascii');
+     });
+     merge.on('exit', (code) => {
+       if(code !== 0) {
+         return next('Failed to merge master.');
+       }
+     });
    }
 ], function(err) {
   if(err) {
