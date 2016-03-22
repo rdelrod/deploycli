@@ -127,7 +127,7 @@ async.waterfall([
 
     if(output === ',,') {
       log('master is clean');
-      return next(false, config);
+      return next(false, branch, config);
     }
 
     commitChanges(config, branch, next);
@@ -154,12 +154,15 @@ async.waterfall([
        data = data.toString('ascii');
        if(data === 'error: pathspec \''+config.branch+'\' did not match any file(s) known to git.\n') {
          log('creating branch', config.branch);
+
+         // create the "production" branch
          let branchattempt = spawn('git', ['branch', config.branch]);
          branchattempt.on('exit', (code) => {
            if(code !== 0) {
              return next('Failed to create branch :(');
            }
 
+           // checkout to the "production" branch
            let checkout = spawn('git', ['checkout', config.branch]);
            checkout.on('exit', (code) => {
              if(code !== 0) {
@@ -171,6 +174,7 @@ async.waterfall([
          });
        }
 
+       // check if we need to commit (should be obsolete.)
        if(data.match(/Your local changes/g)) {
          return commitChanges(config, config.branch, next);
        }
