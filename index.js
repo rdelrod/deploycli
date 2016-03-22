@@ -119,7 +119,7 @@ async.waterfall([
   },
 
   /**
-   * Check the status of master
+   * Check the status of master, if dirty, ask to commit it.
    **/
   function(config, branch, next) {
     let status = require('child_process').spawnSync('git', ['status', '-z']);
@@ -135,6 +135,8 @@ async.waterfall([
 
   /**
    * If we're not on the production branch, go to it.
+   *
+   * Also attempt to create the branch if it doesn't actuall exist already.
    **/
    function(config, branch, next) {
      if(branch === config.branch) {
@@ -170,7 +172,7 @@ async.waterfall([
        }
 
        if(data.match(/Your local changes/g)) {
-         commitChanges(config, config.branch, next);
+         return commitChanges(config, config.branch, next);
        }
      })
      git.on('exit', (code) => {
@@ -217,6 +219,9 @@ async.waterfall([
      });
    },
 
+   /**
+    * git checkout master to return the state.
+    **/
     function(config, next) {
       let checkout = spawn('git', ['checkout', 'master']);
       checkout.on('exit', (code) => {
