@@ -10,6 +10,7 @@
 
 const fs      = require('fs'),
       path    = require('path'),
+      prompt  = require('prompt'),
       os      = require('os'),
       grn     = require('git-repo-name'),
       async   = require('async'),
@@ -102,7 +103,47 @@ async.waterfall([
        }
 
        if(data.match(/Your local changes/g)) {
-         return next('Please commit your changes.');
+         async.waterfall([
+           function(n) {
+             let add = spawn('git', ['add', '-A', '.']);
+             add.on('exit', (code) => {
+               if(code !== 0) {
+                 return n('Failed to add . to staging.');
+               }
+
+               return n();
+             });
+           },
+
+           function(n) {
+             prompt.start();
+
+             prompt.get(['commit'], function(err, result) {
+               if(err) {
+                 return n(err);
+               }
+
+               return n(false, result.commit);
+             });
+           },
+
+           function(message, n) {
+             let commit = spawn('git', ['commit', '-am', message]);
+             commit.on('exit', (code) => {
+               if(code !== 0) {
+                 return n('Failed to commit changes.');
+               }
+
+               return n();
+             })
+           }
+         ], function(err) {
+           if(err) {
+             return next(err);
+           }
+
+           return next(config);
+         })
        }
      })
    },
@@ -115,7 +156,7 @@ async.waterfall([
      let status = spawn('git', ['status', '-z']);
      status.stdout.on('data', () => {
        output = true;
-       return next('production branch is dirty. Please commit.')
+       return next('production branch is dirty. Please commit.');
      });
      status.on('exit', () => {
        if(output === false) {
