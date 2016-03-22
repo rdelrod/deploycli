@@ -74,10 +74,10 @@ const commitChanges = function(config, branch, next) {
     let checkout = spawn('git', ['checkout', config.branch]);
     checkout.on('exit', (code) => {
       if(code !== 0) {
-        return next('Failed to checkout after commiting master :(');
+        return next('Failed to checkout after commiting');
       }
 
-      return next(false, config);
+      return next(false, branch, config);
     });
   })
 }
