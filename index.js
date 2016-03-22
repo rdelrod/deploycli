@@ -245,7 +245,7 @@ async.waterfall([
           return next('Failed to push to origin');
         }
 
-        return next();
+        return next(false, config);
       })
     },
 
