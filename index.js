@@ -211,6 +211,9 @@ async.waterfall([
     * Merge master in config.branch
     **/
    function(config, next) {
+     log('merge master with', config.branch);
+
+     // ^
      let merge = spawn('git', ['merge', 'master']);
      merge.stdout.on('data', (data) => {
        data = data.toString('ascii');
