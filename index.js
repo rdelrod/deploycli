@@ -87,13 +87,13 @@ async.waterfall([
          log('creating branch', config.branch);
          let branchattempt = spawn('git', ['branch', config.branch]);
          branchattempt.on('exit', (code) => {
-           if(code !== 1) {
+           if(code !== 0) {
              return next('Failed to create branch :(');
            }
 
            let checkout = spawn('git', ['checkout', config.branch]);
            checkout.on('exit', (code) => {
-             if(code !== 1) {
+             if(code !== 0) {
                return next('Failed to checkout after creating branch :(');
              }
 
@@ -144,7 +144,7 @@ async.waterfall([
 
            let checkout = spawn('git', ['checkout', config.branch]);
            checkout.on('exit', (code) => {
-             if(code !== 1) {
+             if(code !== 0) {
                return next('Failed to checkout after commiting master :(');
              }
 
