@@ -12,6 +12,7 @@ const fs      = require('fs'),
       path    = require('path'),
       prompt  = require('prompt'),
       os      = require('os'),
+      io      = require('socket.io-client'),
       grn     = require('git-repo-name'),
       async   = require('async'),
       spawn   = require('child_process').spawn;
@@ -91,7 +92,8 @@ async.waterfall([
     return next(false, {
       name: name,
       origin: config.git.replace('{name}', name),
-      branch: config.branch
+      branch: config.branch,
+      deploy: config.deploy
     });
   },
 
@@ -234,35 +236,53 @@ async.waterfall([
      * Push the code to the production branch.
      **/
     function(config, next) {
-      log('running git push origin', config.branch)
-      let push = spawn('git', ['push', 'origin', config.branch]);
-      push.stdout.on('data', (data) => {
-        data = data.toString('ascii');
-        console.log(data);
-      });
-      push.stderr.on('data', (data) => {
-        data = data.toString('ascii');
-        console.error(data);
-      });
-      push.on('exit', (code) => {
-        if(code !== 0) {
-          return next('Failed to push to origin');
-        }
+      log('connect to deployment')
+      let socket = io(config.deploy);
+      socket.on('connect', function() {
+        log('connected to deployment');
+        
+        log('running git push origin', config.branch)
+        let push = spawn('git', ['push', 'origin', config.branch]);
+        push.stdout.on('data', (data) => {
+          data = data.toString('ascii');
+          console.log(data);
+        });
+        push.stderr.on('data', (data) => {
+          data = data.toString('ascii');
+          console.error(data);
+        });
+        push.on('exit', (code) => {
+          if(code !== 0) {
+            return next('Failed to push to origin');
+          }
 
-        return next(false, config);
-      })
+          return next(false, config);
+        })
+      });
+      socket.on('disconnect', function() {
+        log('disconnected from deployment server')
+      });
     },
 
     /**
      * git checkout master to return the state.
      **/
-     function(config, next) {
+     function(config, socket, next) {
        let checkout = spawn('git', ['checkout', 'master']);
        checkout.on('exit', (code) => {
          if(code !== 0) return next('Failed to checkout back to master');
 
          log('checkout master')
-         return next(false, config);
+         return next(false, config, socket);
+       });
+     },
+
+     /**
+      * Connect to the socket.io instance.
+      **/
+     function(config, socket, next) {
+       socket.on('deploy', function(data) {
+         console.log(data);
        });
      }
 ], function(err, config) {
