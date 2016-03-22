@@ -153,6 +153,13 @@ async.waterfall([
          })
        }
      })
+     git.on('exit', (code) => {
+       try {
+         if(code === 0) return next(false, config);
+       } catch(e) {
+         return
+       }
+     });
    },
 
    /**
@@ -188,25 +195,7 @@ async.waterfall([
        if(code !== 0) {
          return next('Failed to merge master.');
        }
-
-       log('merged master into', config.branch);
-       return next(config);
      });
-   },
-
-   /**
-    * Change back to master.
-    **/
-   function(config, next) {
-     let checkout = spawn('git', ['checkout', 'master']);
-     checkout.on('exit', (code) => {
-       if(code !== 0) {
-         return next('Failed to checkout back to master');
-       }
-
-       log('checkout master');
-       return next();
-     })
    }
 ], function(err) {
   if(err) {
