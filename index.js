@@ -219,17 +219,40 @@ async.waterfall([
      });
    },
 
-   /**
-    * git checkout master to return the state.
-    **/
+    /**
+     * Push the code to the production branch.
+     **/
     function(config, next) {
-      let checkout = spawn('git', ['checkout', 'master']);
-      checkout.on('exit', (code) => {
-        if(code !== 0) return next('Failed to checkout back to master');
-
-        return next(false, config);
+      let push = spawn('git', ['push', 'origin', config.branch]);
+      push.stout.on('data', (data) => {
+        data = data.toString('ascii');
+        console.log(data);
       });
-    }
+      push.sterr.on('data', (data) => {
+        data = data.toString('ascii');
+        console.error(data);
+      });
+      push.on('exit', (code) => {
+        if(code !== 0) {
+          return next('Failed to push to origin');
+        }
+
+        return next();
+      })
+    },
+
+    /**
+     * git checkout master to return the state.
+     **/
+     function(config, next) {
+       let checkout = spawn('git', ['checkout', 'master']);
+       checkout.on('exit', (code) => {
+         if(code !== 0) return next('Failed to checkout back to master');
+
+         log('checkout master')
+         return next(false, config);
+       });
+     }
 ], function(err, config) {
   if(err) {
     spawn('git', ['checkout', 'master']); // failsafe.
