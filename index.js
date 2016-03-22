@@ -231,6 +231,7 @@ async.waterfall([
      * Push the code to the production branch.
      **/
     function(config, next) {
+      log('running git push origin', config.branch)
       let push = spawn('git', ['push', 'origin', config.branch]);
       push.stdout.on('data', (data) => {
         data = data.toString('ascii');
