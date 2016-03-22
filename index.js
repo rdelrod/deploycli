@@ -142,7 +142,14 @@ async.waterfall([
              return next(err);
            }
 
-           return next(false, config);
+           let checkout = spawn('git', ['checkout', config.branch]);
+           checkout.on('exit', (code) => {
+             if(code !== 1) {
+               return next('Failed to checkout after commiting master :(');
+             }
+
+             return next(false, config);
+           });
          })
        }
      })
