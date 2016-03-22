@@ -224,7 +224,7 @@ async.waterfall([
      **/
     function(config, next) {
       let push = spawn('git', ['push', 'origin', config.branch]);
-      push.stout.on('data', (data) => {
+      push.stdout.on('data', (data) => {
         data = data.toString('ascii');
         console.log(data);
       });
