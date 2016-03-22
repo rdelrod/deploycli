@@ -238,9 +238,9 @@ async.waterfall([
     function(config, next) {
       log('connect to deployment')
       let socket = io(config.deploy);
-      socket.on('connect', function() {
+      socket.on('connected', function() {
         log('connected to deployment');
-        
+
         log('running git push origin', config.branch)
         let push = spawn('git', ['push', 'origin', config.branch]);
         push.stdout.on('data', (data) => {
