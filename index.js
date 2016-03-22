@@ -260,7 +260,7 @@ async.waterfall([
           return next('Failed to push to origin');
         }
 
-        return next(false, config);
+        return next(false, config, socket);
       })
     },
 
