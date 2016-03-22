@@ -127,7 +127,7 @@ async.waterfall([
 
     if(output === ',,') {
       log('master is clean');
-      return next(false, branch, config);
+      return next(false, config, branch);
     }
 
     commitChanges(config, branch, next);
@@ -142,6 +142,10 @@ async.waterfall([
      if(branch === config.branch) {
        log('already on', config.branch);
        return next(false, config);
+     }
+
+     if(config.branch === undefined) {
+       return next('Branch was undefined');
      }
 
      log('checking out to', config.branch, 'from', branch);
