@@ -290,6 +290,7 @@ async.waterfall([
       * Connect to the socket.io instance.
       **/
      function(config, socket, next) {
+       log('deisplaying deploy messages')
        socket.on('deploy', function(data) {
          console.log(data);
        });
