@@ -120,7 +120,6 @@ async.waterfall([
 
              prompt.get(['commit'], function(err, result) {
                if(err) {
-                 console.log(err);
                  return n(err);
                }
 
@@ -143,7 +142,7 @@ async.waterfall([
              return next(err);
            }
 
-           return next(config);
+           return next(false, config);
          })
        }
      })
