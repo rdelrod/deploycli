@@ -228,7 +228,7 @@ async.waterfall([
         data = data.toString('ascii');
         console.log(data);
       });
-      push.sterr.on('data', (data) => {
+      push.stderr.on('data', (data) => {
         data = data.toString('ascii');
         console.error(data);
       });
