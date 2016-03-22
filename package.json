@@ -1,0 +1,31 @@
+{
+  "name": "deploycli",
+  "version": "1.0.0",
+  "description": "CLI to push to rdelrod/deploy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rdelrod/deploycli.git"
+  },
+  "keywords": [
+    "deploy",
+    "cli",
+    "git"
+  ],
+  "author": "Jared Allard <jaredallard@outlook.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rdelrod/deploycli/issues"
+  },
+  "homepage": "https://github.com/rdelrod/deploycli#readme",
+  "dependencies": {
+    "async": "^2.0.0-rc.1",
+    "colors": "^1.1.2",
+    "git-repo-name": "^0.5.1",
+    "nodegit": "^0.11.9",
+    "socket.io-client": "^1.4.5"
+  }
+}
