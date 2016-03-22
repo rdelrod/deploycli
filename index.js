@@ -77,7 +77,7 @@ const commitChanges = function(config, branch, next) {
         return next('Failed to checkout after commiting');
       }
 
-      return next(false, branch, config);
+      return next(false, config, branch);
     });
   })
 }
