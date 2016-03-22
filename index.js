@@ -186,18 +186,15 @@ async.waterfall([
     * Check the status of the production branch, and merge master.
     **/
    function(config, next) {
-     let output = false;
-     let status = spawn('git', ['status', '-z']);
-     status.stdout.on('data', () => {
-       output = true;
-       return next('production branch is dirty. Please commit.');
-     });
-     status.on('exit', () => {
-       if(output === false) {
-         log('production is clean');
-         return next(false, config);
-       }
-     });
+     let status = require('child_process').spawnSync('git', ['status', '-z']);
+     let output = status.output.toString('ascii');
+
+     if(!output) {
+       log('production is clean');
+       return next(false, config);
+     }
+
+     return next('Production is dirty, this shouldn\'t happen, please examine the tree.')
    },
 
    /**
@@ -230,6 +227,7 @@ async.waterfall([
     }
 ], function(err, config) {
   if(err) {
+    spawn('git', ['checkout', 'master']); // failsafe.
     log('error', err);
     process.exit(1);
   }
