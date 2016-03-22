@@ -100,7 +100,29 @@ async.waterfall([
            });
          });
        }
+
+       if(data.match(/Your local changes/g)) {
+         return next('Please commit your changes.');
+       }
      })
+   },
+
+   /**
+    * Check the status of the production branch, and merge master.
+    **/
+   function(config, next) {
+     let output = false;
+     let status = spawn('git', ['status', '-z']);
+     status.stdout.on('data', () => {
+       output = true;
+       return next('production branch is dirty. Please commit.')
+     });
+     status.on('exit', () => {
+       if(output === false) {
+         log('production is clean');
+         return next(false, config);
+       }
+     });
    }
 ], function(err) {
   if(err) {
