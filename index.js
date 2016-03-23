@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * deploycli - deploy client for... you guessed it... deploy!
  *
@@ -15,7 +17,8 @@ const fs      = require('fs'),
       io      = require('socket.io-client'),
       grn     = require('git-repo-name'),
       async   = require('async'),
-      spawn   = require('child_process').spawn;
+      spawn   = require('child_process').spawn,
+      exec    = require('child_process').exec;
 
 let   config;
 const LOCAL   = path.join(os.homedir(), '.deploy');
@@ -114,19 +117,14 @@ async.waterfall([
 
     log('checking git repo:', name);
 
-    let git = spawn('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
-    git.stdout.on('data', (data) => {
-      let branch = data.toString('ascii');
+    exec('git rev-parse --abbrev-ref HEAD', (err, stdout) => {
+      let branch = stdout.toString('ascii');
       if(branch.split(' ')[1] !== undefined) {
         return next('Failed to determine the branch we\'re on. GOT: '+branch);
       }
 
       return next(false, config, branch.replace(/\n/g, ''));
-    })
-
-    git.stderr.on('data', (data) => {
-      return next(data.toString('ascii'));
-    })
+    });
   },
 
   /**
@@ -147,7 +145,7 @@ async.waterfall([
   /**
    * If we're not on the production branch, go to it.
    *
-   * Also attempt to create the branch if it doesn't actuall exist already.
+   * Also attempt to create the branch if it doesn't actually exist already.
    **/
    function(config, branch, next) {
      if(branch === config.branch) {
@@ -184,7 +182,7 @@ async.waterfall([
                return next('Failed to checkout after creating branch :(');
              }
 
-             return next(false);
+             return next(false, config);
            });
          });
        }
@@ -242,18 +240,36 @@ async.waterfall([
    },
 
     /**
-     * Push the code to the production branch.
+     * Connect to the deployment system socket.io instance.
      **/
     function(config, next) {
-      log('connect to deployment')
-      let socket = io(config.deploy);
+      log('connecting to deployment server socket')
+      let socket = io.connect(config.deploy);
       socket.on('connected', function() {
         log('connected to deployment');
+        return next(false, config, socket);
       });
-      socket.on('disconnect', function() {
-        log('disconnected from deployment server')
-      });
+      socket.on('deploy', function(data) {
+        let erepo = data.repo;
+        let edata = data.data;
 
+        if(erepo === config.name) {
+          console.log(edata);
+
+          if(edata === undefined) {
+            console.log('empty data received:', data);
+          }
+        }
+      });
+      socket.on('connect_error', function() {
+        return next('Failed to connect to the deploy server.');
+      })
+    },
+
+    /**
+     * Push the code to the production branch
+     **/
+    function(config, socket, next) {
       log('running git push origin', config.branch)
       let push = spawn('git', ['push', 'origin', config.branch]);
       push.stdout.on('data', (data) => {
@@ -290,10 +306,27 @@ async.waterfall([
       * Connect to the socket.io instance.
       **/
      function(config, socket, next) {
-       log('deisplaying deploy messages')
-       socket.on('deploy', function(data) {
-         console.log(data);
+       socket.on('status', function(data) {
+         let inp     = data.data.inprogress;
+         let success = data.data.success;
+         let repo    = data.repo;
+
+         if(repo === config.name) {
+           if(success && !inp) {
+             return next(false, config);
+           }
+         }
        });
+
+       socket.on('error', function(data) {
+         let repo = data.repo;
+
+         if(repo === config.name) {
+           return next('Deployment failed.');
+         }
+       })
+
+       log('displaying deploy messages');
      }
 ], function(err, config) {
   if(err) {
